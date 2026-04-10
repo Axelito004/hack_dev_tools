@@ -73,9 +73,9 @@ def draw_shell(stdscr):
     }
 
     palabra = "FUNDACITE"
-    header_inst = "--- FUNDACITE Y MINCYT ---"
+    header_inst = "--- FUNDACITE && MINCYT ---"
     subtitle = "Hack-Dev Tools | Yaracuy"
-    authors = "By: AG Castillo Giménez && Ing. Josue Ordoñez"
+    authors = "By: (AXL-HACKING)AG Castillo Giménez && Ing. Josue Ordoñez"
     
     opciones = [
         "[ 1 ] - Fundamentos de Bash y Supervivencia",
