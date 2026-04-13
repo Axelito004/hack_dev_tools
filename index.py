@@ -11,16 +11,18 @@ import os
 # Configurar soporte para caracteres especiales (UTF-8)
 locale.setlocale(locale.LC_ALL, '')
 
-def hablar(texto, rate=300):
-    """
-    Usa el motor del sistema directamente para evitar errores de memoria 
-    en Python 3.13 y asegurar la velocidad de 290.
-    """
+def hablar(texto, rate=200):
     try:
-        # Limpiamos el texto de caracteres que puedan romper el comando bash
         texto_limpio = texto.replace('"', '').replace("'", "")
-        # Ejecución directa de espeak-ng
-        os.system(f'espeak-ng -s {rate} -v es "{texto_limpio}"')
+        os.system(f'espeak-ng -s {rate} -v es "{texto_limpio}" 2>/dev/null')
+    except:
+        pass
+
+def hablar_async(texto, rate=400):
+    try:
+        texto_limpio = texto.replace('"', '').replace("'", "")
+        os.system('killall espeak-ng 2>/dev/null')
+        os.system(f'espeak-ng -s {rate} -v es "{texto_limpio}" 2>/dev/null &')
     except:
         pass
 
