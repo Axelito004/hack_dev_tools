@@ -59,6 +59,8 @@ def draw_shell(stdscr):
     # --- 2. CONFIGURACIÓN DE CURSES ---
     curses.curs_set(0)
     stdscr.nodelay(False)
+    # ACTIVAMOS EL TIMEOUT PARA LA ANIMACIÓN (150ms)
+    stdscr.timeout(150)
     curses.start_color()
     stdscr.keypad(True)
 
@@ -66,6 +68,7 @@ def draw_shell(stdscr):
     curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK) 
     curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK) 
     curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_CYAN)  
+    curses.init_pair(10, curses.COLOR_YELLOW, curses.COLOR_BLACK) # COLOR GLITCH
 
     # --- 3. BANNER ---
     letras = {
@@ -83,7 +86,8 @@ def draw_shell(stdscr):
     palabra = "FUNDACITE"
     header_inst = "--- FUNDACITE && MINCYT YARACUY ---"
     subtitle = "Pasos basicos en Terminal & Herremientas Forenses"
-    authors = "Desarrollado por:(AXL-HACKING) A.G Castillo Giménez && Ing. Josue Ordoñez"
+    # ACTUALIZACIÓN DE IDENTIDAD SEGÚN TU PREFERENCIA PROFESIONAL
+    authors = "Desarrollado por: Angel Gustavo Castillo Giménez && Ing. Josue Ordoñez"
     
     opciones = [
         " 1. Fundamentos de Bash y Supervivencia ",
@@ -102,12 +106,9 @@ def draw_shell(stdscr):
         stdscr.clear()
         alto, ancho = stdscr.getmaxyx()
 
-        # Cálculo de la "Masa Visual" para centrar todo el bloque verticalmente
-        # (Banner + Info + Menú = aprox 18 líneas)
         bloque_alto = 18
         start_y = max(0, (alto // 2) - (bloque_alto // 2))
 
-        # Centrado del Banner
         ancho_total_banner = sum(len(letras[l][0]) for l in palabra) + (len(palabra) - 1)
         banner_x = max(0, (ancho // 2) - (ancho_total_banner // 2))
 
@@ -116,7 +117,7 @@ def draw_shell(stdscr):
             hx = max(0, (ancho // 2) - (len(header_inst) // 2))
             stdscr.addstr(start_y, hx, header_inst, curses.color_pair(2) | curses.A_DIM)
 
-            # Banner Glitch
+            # Banner Principal
             x_cursor = banner_x
             y_banner = start_y + 2
             for caracter in palabra:
@@ -132,8 +133,22 @@ def draw_shell(stdscr):
                         stdscr.addstr(y_banner + i, x_cursor, contenido, curses.color_pair(1) | curses.A_BOLD)
                 x_cursor += len(letras[caracter][0]) + 1
 
+            # --- TEXTO GLITCH: POWERED BY I.A. ---
+            texto_base = "p o w e r e d   b y   I . A ."
+            caracteres_glitch = "!<>-_\\/[]{}—=+*^?#_01"
+            texto_animado = ""
+            
+            for char in texto_base:
+                if char != " " and random.random() < 0.15:
+                    texto_animado += random.choice(caracteres_glitch)
+                else:
+                    texto_animado += char
+                    
+            # Se ubica alineado a la derecha del banner
+            stdscr.addstr(y_banner + 6, max(0, banner_x + ancho_total_banner - len(texto_base)), texto_animado, curses.color_pair(10) | curses.A_DIM)
+
             # Info Centrada
-            y_info = y_banner + 7
+            y_info = y_banner + 8
             stdscr.addstr(y_info, max(0, (ancho // 2) - (len(subtitle) // 2)), subtitle, curses.color_pair(2) | curses.A_BOLD)
             stdscr.addstr(y_info + 1, max(0, (ancho // 2) - (len(authors) // 2)), authors, curses.color_pair(3))
 
@@ -141,7 +156,6 @@ def draw_shell(stdscr):
             y_menu = y_info + 4
             for idx, opc in enumerate(opciones):
                 if y_menu + idx < alto:
-                    # Centramos el texto dentro del selector y el selector en la pantalla
                     opc_txt = opc.center(ANCHO_SELECTOR)
                     mx = max(0, (ancho // 2) - (ANCHO_SELECTOR // 2))
                     
@@ -155,22 +169,32 @@ def draw_shell(stdscr):
 
         stdscr.refresh()
 
+        # LECTURA DE TECLADO ASÍNCRONA
         tecla = stdscr.getch()
+        
+        # Si no se presiona nada, repite el bucle para continuar la animación
+        if tecla == -1:
+            continue
+
         if tecla == curses.KEY_UP and fila_seleccionada > 0:
             fila_seleccionada -= 1
         elif tecla == curses.KEY_DOWN and fila_seleccionada < len(opciones) - 1:
             fila_seleccionada += 1
         elif tecla in [10, 13, curses.KEY_ENTER]:
             if fila_seleccionada == 5: break
+            
+            # DESACTIVAR TIMEOUT ANTES DE ENTRAR AL MÓDULO PARA NO ROMPER SU TECLADO
+            stdscr.timeout(-1)
+            
             if fila_seleccionada == 0:
                 stdscr.clear()
                 nivel1.iniciar(stdscr)
                 curses.curs_set(0)
-            elif fila_seleccionada == 1: # ESTA ES LA NUEVA LÍNEA
+            elif fila_seleccionada == 1:
                 stdscr.clear()
                 nivel2.iniciar(stdscr)
                 curses.curs_set(0)
-            elif fila_seleccionada == 2: # ESTA ES LA NUEVA LÍNEA
+            elif fila_seleccionada == 2:
                 stdscr.clear()
                 nivel3.iniciar(stdscr)
                 curses.curs_set(0)
@@ -180,6 +204,9 @@ def draw_shell(stdscr):
                 stdscr.addstr(alto // 2, max(0, (ancho // 2) - (len(msg) // 2)), msg, curses.color_pair(1) | curses.A_BOLD)
                 stdscr.refresh()
                 time.sleep(1)
+                
+            # REACTIVAR ANIMACIÓN AL VOLVER AL MENÚ
+            stdscr.timeout(150)
 
 if __name__ == "__main__":
     curses.wrapper(draw_shell)
