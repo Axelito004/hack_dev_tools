@@ -35,13 +35,20 @@ def limpiar_evidencia():
     os.system("rm -rf rescate_datos 2>/dev/null")
 
 def draw_text_wrapped(stdscr, y, x, text, width, color):
-    lineas = textwrap.wrap(text, width)
-    for i, linea in enumerate(lineas):
-        try:
-            stdscr.addstr(y + i, x, linea, color)
-        except curses.error:
-            pass
-    return y + len(lineas)
+    """Ahora respeta los saltos de línea (\n) para poder dibujar código y ejemplos"""
+    y_actual = y
+    for parrafo in text.split('\n'):
+        if parrafo.strip() == "":
+            y_actual += 1
+            continue
+        lineas = textwrap.wrap(parrafo, width)
+        for linea in lineas:
+            try:
+                stdscr.addstr(y_actual, x, linea, color)
+            except curses.error:
+                pass
+            y_actual += 1
+    return y_actual
 
 def iniciar(stdscr):
     curses.start_color()
@@ -123,7 +130,7 @@ def iniciar(stdscr):
             if ejecutado:
                 y_act += 4
                 stdscr.addstr(y_act, mx, "--- RESULTADO EN EL KERNEL ---", curses.color_pair(4) | curses.A_BOLD)
-                # Binwalk da una salida tipo tabla, mostramos unas cuantas líneas más (8)
+                # Mostramos las ultimas lineas
                 lineas = salida_terminal.split('\n')[-9:] 
                 for i, l in enumerate(lineas):
                     try:
@@ -136,7 +143,7 @@ def iniciar(stdscr):
             prompt = "ROOT@FORENSE:~# "
             stdscr.addstr(y_prompt, mx, prompt, curses.color_pair(11) | curses.A_BOLD)
             
-            # Control de pase a la siguiente fase
+            # Control de pase
             if fase_superada:
                 msg_avanzar = "[ PULSA ENTER PARA CONTINUAR ]"
                 stdscr.addstr(y_prompt, mx + len(prompt), msg_avanzar, curses.color_pair(10) | curses.A_BLINK)
@@ -165,12 +172,10 @@ def iniciar(stdscr):
             elif k in [10, 13]: # ENTER
                 if input_usuario.strip() == "": continue
                 
-                # Indicador de procesamiento visual
                 stdscr.addstr(y_prompt + 2, mx, "[*] Procesando en el Kernel de Kali...", curses.color_pair(10) | curses.A_BLINK)
                 stdscr.refresh()
                 
                 try:
-                    # Ejecución real en el OS
                     res = subprocess.run(input_usuario, shell=True, capture_output=True, text=True, timeout=10)
                     salida_terminal = res.stdout + res.stderr
                     ejecutado = True
@@ -189,36 +194,36 @@ def iniciar(stdscr):
                 limpiar_evidencia()
                 return
 
-    # --- PANTALLA FINAL: EXPLICACIÓN MODO "NIÑO DE PRIMARIA" ---
+    # --- PANTALLA FINAL: EXPLICACIÓN + EJEMPLO REAL TIPO CONSOLA ---
     stdscr.clear()
     alto, ancho = stdscr.getmaxyx()
     mx = int(ancho * 0.1)
     ancho_t = ancho - (mx * 2)
 
     titulo_final = "=== RESUMEN DE LA MISIÓN: RESURRECCIÓN DE DATOS ==="
-    stdscr.addstr(2, max(0, (ancho // 2) - (len(titulo_final) // 2)), titulo_final, curses.color_pair(10) | curses.A_BOLD)
+    stdscr.addstr(1, max(0, (ancho // 2) - (len(titulo_final) // 2)), titulo_final, curses.color_pair(10) | curses.A_BOLD)
 
     texto_explicativo = (
-        "¡Eres un mago de la informática forense! Acabas de resucitar un archivo "
-        "que el sistema operativo creía muerto. Para que lo entiendas súper fácil, "
+        "¡Eres un mago de la informática forense! Para que lo entiendas súper fácil, "
         "imagina que el disco duro es una gran caja de arena:\n\n"
-        "1. LA MÁQUINA DE RAYOS X (binwalk):\n"
-        "El malo tiró su juguete (el archivo secreto) en la gran caja de arena y luego "
-        "lo cubrió con muchísima tierra y basura. A simple vista solo ves arena. "
-        "El comando 'binwalk' es como ponerte unos lentes de Rayos X. Escanea la arena y te dice: "
-        "'¡Oye! En la esquina izquierda detecto la forma de un carrito de juguete (un ZIP)'.\n\n"
-        "2. LAS PINZAS MÁGICAS (foremost):\n"
-        "Ya sabemos dónde está el juguete gracias a los Rayos X, pero si metemos una pala "
-        "podríamos romperlo. 'foremost' es como unas pinzas quirúrgicas gigantes. "
-        "Mete las pinzas en la arena ignorando toda la basura, agarra el juguete con mucho "
-        "cuidado y lo saca limpiecito para guardarlo en la carpeta de rescate.\n\n"
-        "3. EL TESORO RESCATADO (ls):\n"
-        "Finalmente, abrimos el cofre de rescate y ¡Ta-Da! Ahí está nuestro archivo, "
-        "listo para ser usado como evidencia contra el sospechoso en la corte.\n\n"
+        "1. LA MÁQUINA DE RAYOS X (binwalk): Escanea la arena y te dice: '¡Oye! Aquí hay un juguete (un ZIP) oculto'.\n"
+        "2. LAS PINZAS MÁGICAS (foremost): Mete las pinzas ignorando la basura y saca el archivo limpiecito.\n"
+        "3. EL TESORO RESCATADO (ls): Abrimos el cofre y ahí está nuestro archivo recuperado.\n\n"
+        "--- ASÍ SE VE EL RESULTADO EN LA VIDA REAL ---\n"
+        "> binwalk evidencia_002.img\n"
+        "DECIMAL       HEXADECIMAL     DESCRIPTION\n"
+        "--------------------------------------------------------------------------------\n"
+        "2097152       0x200000        Zip archive data, at least v2.0 to extract\n\n"
+        "> foremost -i evidencia_002.img -o rescate_datos\n"
+        "Processing: evidencia_002.img\n"
+        "Extracting: zip...\n\n"
+        "> ls rescate_datos/zip/\n"
+        "00004096.zip  <-- ¡ESTE ES TU ARCHIVO RESUCITADO!\n"
+        "----------------------------------------------\n\n"
         ">> Presiona ENTER para volver al menú principal..."
     )
 
-    draw_text_wrapped(stdscr, 5, mx, texto_explicativo, ancho_t, curses.color_pair(2))
+    draw_text_wrapped(stdscr, 3, mx, texto_explicativo, ancho_t, curses.color_pair(2))
     stdscr.refresh()
 
     while True:
