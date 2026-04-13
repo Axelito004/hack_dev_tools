@@ -3,7 +3,9 @@ import time
 import locale
 import random
 import pyttsx3
-import nivel1  
+import nivel1
+import nivel2 
+import nivel3 
 
 # Configurar soporte para caracteres especiales (UTF-8)
 locale.setlocale(locale.LC_ALL, '')
@@ -160,6 +162,14 @@ def draw_shell(stdscr):
             if fila_seleccionada == 0:
                 stdscr.clear()
                 nivel1.iniciar(stdscr)
+                curses.curs_set(0)
+            elif fila_seleccionada == 1: # ESTA ES LA NUEVA LÍNEA
+                stdscr.clear()
+                nivel2.iniciar(stdscr)
+                curses.curs_set(0)
+            elif fila_seleccionada == 2: # ESTA ES LA NUEVA LÍNEA
+                stdscr.clear()
+                nivel3.iniciar(stdscr)
                 curses.curs_set(0)
             else:
                 stdscr.clear()
