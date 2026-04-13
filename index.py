@@ -80,7 +80,7 @@ def draw_shell(stdscr):
     palabra = "FUNDACITE"
     header_inst = "--- FUNDACITE && MINCYT YARACUY ---"
     subtitle = "Pasos basicos en Terminal & Herremientas Forenses"
-    authors = "Desarrollado por: Ángel Gustavo Castillo Giménez && Ing. Josue Ordoñez"
+    authors = "Desarrollado por:(AXL-HACKING) A.G Castillo Giménez && Ing. Josue Ordoñez"
     
     opciones = [
         " 1. Fundamentos de Bash y Supervivencia ",
