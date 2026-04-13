@@ -6,6 +6,7 @@ import pyttsx3
 import nivel1
 import nivel2 
 import nivel3 
+import os
 
 # Configurar soporte para caracteres especiales (UTF-8)
 locale.setlocale(locale.LC_ALL, '')
