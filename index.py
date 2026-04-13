@@ -87,7 +87,7 @@ def draw_shell(stdscr):
     header_inst = "--- FUNDACITE && MINCYT YARACUY ---"
     subtitle = "Pasos basicos en Terminal & Herremientas Forenses"
     # ACTUALIZACIÓN DE IDENTIDAD SEGÚN TU PREFERENCIA PROFESIONAL
-    authors = "Desarrollado por: Angel Gustavo Castillo Giménez && Ing. Josue Ordoñez"
+    authors = "Desarrollado por:(AXL-HACKING) A.G Castillo Giménez && Ing. Josue Ordoñez"
     
     opciones = [
         " 1. Fundamentos de Bash y Supervivencia ",
