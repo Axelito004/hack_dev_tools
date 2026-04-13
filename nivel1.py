@@ -31,7 +31,7 @@ def iniciar(stdscr):
     # --- BASE DE DATOS DE COMANDOS ---
     lecciones = [
         # NAVEGACIÓN Y ARCHIVOS
-        {"cmd": "sudo", "desc": "Permite ejecutar al usuario ejecutar comandos sin ningun tipo de restrccion", "ejemplo": "sudo apt upgrade (Actualiza todas las aplicaciones)"},
+        {"cmd": "sudo", "desc": "Permite al usuario ejecutar comandos sin ningun tipo de restrccion", "ejemplo": "sudo apt upgrade (Actualiza todas las aplicaciones)"},
         {"cmd": "pwd", "desc": "Imprime la ruta absoluta del directorio de trabajo actual.", "ejemplo": "Uso: pwd (Verifica donde estas parado)"},
         {"cmd": "ls -la", "desc": "Lista contenido del directorio con atributos detallados y archivos ocultos.", "ejemplo": "Uso: ls -la /home/kali"},
         {"cmd": "cd /tmp", "desc": "Cambia el directorio actual a la carpeta de archivos temporales.", "ejemplo": "Uso: cd /var/log (Para revisar registros)"},
