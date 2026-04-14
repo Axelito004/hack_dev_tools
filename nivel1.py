@@ -33,6 +33,7 @@ def iniciar(stdscr):
         # NAVEGACIÓN Y ARCHIVOS
         {"cmd": "sudo", "desc": "Permite al usuario ejecutar comandos sin ningun tipo de restrccion", "ejemplo": "sudo apt upgrade (Actualiza todas las aplicaciones)"},
         {"cmd": "pwd", "desc": "Imprime la ruta absoluta del directorio de trabajo actual.", "ejemplo": "Uso: pwd (Verifica donde estas parado)"},
+        
         {"cmd": "ls -la", "desc": "Lista contenido del directorio con atributos detallados y archivos ocultos.", "ejemplo": "Uso: ls -la /home/kali"},
         {"cmd": "cd /tmp", "desc": "Cambia el directorio actual a la carpeta de archivos temporales.", "ejemplo": "Uso: cd /var/log (Para revisar registros)"},
         {"cmd": "mkdir evidence", "desc": "Crea un nuevo directorio en la ruta actual para organizar hallazgos.", "ejemplo": "Uso: mkdir cases_2026"},
@@ -97,6 +98,7 @@ def iniciar(stdscr):
         {"cmd": "journalctl -xe", "desc": "Consulta los registros del sistema gestionados por systemd.", "ejemplo": "Uso: journalctl -u ssh (Ver logs de SSH)"},
         {"cmd": "alias cls='clear'", "desc": "Crea un nombre alternativo o atajo para un comando complejo.", "ejemplo": "Uso: alias (Sin parametros para ver todos)"},
         {"cmd": "exit", "desc": "Termina la ejecucion de la shell o cierra la sesion actual.", "ejemplo": "Finaliza el proceso de terminal activo."}
+        
     ]
 
     curses.start_color()
@@ -220,9 +222,9 @@ def iniciar(stdscr):
     stdscr.clear()
     
     try:
-        escritorio = os.path.expanduser("~/Desktop")
+        escritorio = os.path.expanduser("/home/kali/Desktop/")
         if not os.path.exists(escritorio):
-            escritorio_es = os.path.expanduser("~/Escritorio")
+            escritorio_es = os.path.expanduser("/home/kali/Escritorio")
             if os.path.exists(escritorio_es):
                 escritorio = escritorio_es
             else:

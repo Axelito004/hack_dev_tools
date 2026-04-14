@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Script de Instalación - Proyecto Fundacite Yaracuy
+# Autor: A.G. Castillo Giménez
+
+echo "==================================================="
+echo "[*] INICIANDO DESPLIEGUE DEL ENTORNO FORENSE [*]"
+echo "==================================================="
+echo ""
+
+echo "[1/3] Actualizando repositorios de Kali Linux..."
+sudo apt update -y
+
+echo "[2/3] Instalando herramientas del sistema (Motor de Voz y Forense)..."
+sudo apt install -y espeak-ng binwalk foremost python3-pip
+
+echo "[3/3] Instalando dependencias de Python..."
+# Usamos --break-system-packages para entornos de Kali modernos donde pip es estricto, 
+# o puedes usar un entorno virtual (venv) si lo prefieres.
+pip install pyttsx3 --break-system-packages 2>/dev/null || pip3 install pyttsx3 2>/dev/null
+
+echo ""
+echo "==================================================="
+echo "[+] INSTALACION COMPLETADA CON EXITO."
+echo "[+] Para iniciar el sistema, ejecuta:"
+echo "    python3 index.py"
+echo "==================================================="

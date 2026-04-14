@@ -2,7 +2,7 @@ import curses
 import time
 import locale
 import random
-import pyttsx3
+#import pyttsx3
 import nivel1
 import nivel2 
 import nivel3 
