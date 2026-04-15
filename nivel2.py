@@ -1,197 +1,178 @@
 import curses
-import os
-import subprocess
 import time
+import os
 import textwrap
+import random
 
-def preparar_evidencia():
-    nombre_archivo = "evidencia_001.img"
-    if not os.path.exists(nombre_archivo):
-        os.system(f"dd if=/dev/zero of={nombre_archivo} bs=1M count=10 2>/dev/null")
-        os.system(f"echo 'FLAG{{UNEFA_YARACUY_FORENSE_2026}}' >> {nombre_archivo}")
-    return nombre_archivo
+# --- MOTOR DE VOZ ---
+def hablar(texto, rate=280):
+    try:
+        texto_limpio = texto.replace('"', '').replace("'", "")
+        os.system(f'espeak-ng -s {rate} -v es "{texto_limpio}" 2>/dev/null &')
+    except:
+        pass
 
-def limpiar_evidencia():
-    os.system("rm -f evidencia_001.img backup_evidencia.img 2>/dev/null")
+def format_time(segundos):
+    return f"{int(segundos // 60):02d}:{int(segundos % 60):02d}"
 
 def draw_text_wrapped(stdscr, y, x, text, width, color):
-    lineas = textwrap.wrap(text, width)
-    for i, linea in enumerate(lineas):
-        try:
-            stdscr.addstr(y + i, x, linea, color)
-        except curses.error:
-            pass
-    return y + len(lineas)
+    y_actual = y
+    for parrafo in text.split('\n'):
+        lineas = textwrap.wrap(parrafo, width)
+        for linea in lineas:
+            try:
+                stdscr.addstr(y_actual, x, linea, color)
+            except curses.error: pass
+            y_actual += 1
+    return y_actual
 
-def iniciar(stdscr):
-    curses.start_color()
-    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)  
-    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)  
-    curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(10, curses.COLOR_YELLOW, curses.COLOR_BLACK) 
-    curses.init_pair(11, curses.COLOR_RED, curses.COLOR_BLACK)    
+# --- BASE DE DATOS EXTENDIDA (Basada en Ing. Román) ---
+misiones_ducky = [
+    {
+        "cmd": "sudo apt install default-jre -y",
+        "desc": "Instala el entorno Java necesario para codificar el ataque.",
+        "out": "[+] Java Runtime Environment (JRE) configurado."
+    },
+    {
+        "cmd": "wget https://github.com/libreria_usb",
+        "desc": "Descarga el motor de compilación para los scripts de inyección.",
+        "out": "[+] Descarga finalizada: ducky-encoder.jar"
+    },
+    {
+        "cmd": "echo 'GUI r' > script.txt",
+        "desc": "Inicia el Ducky Script. Este comando abre la ventana de Ejecutar en Windows.",
+        "out": "[+] Archivo script.txt creado con comando GUI r"
+    },
+    {
+        "cmd": "echo 'STRING cmd /c \"echo TREE C:\\ > exploit.bat && start exploit.bat\"' >> script.txt",
+        "desc": "Inyecta una cadena que crea un archivo .bat en la víctima y lo ejecuta de inmediato.",
+        "out": "[+] Payload de persistencia .bat añadido al script."
+    },
+    {
+        "cmd": "java -jar ducky-encoder.jar -i script.txt -o inject.bin",
+        "desc": "Transforma el código malicioso en el binario inject.bin listo para el hardware.",
+        "out": "Encoding... OK!\n[+] Archivo binario generado."
+    }
+]
 
-    archivo_evidencia = preparar_evidencia()
+def simulacion_ataque(stdscr):
+    alto, ancho = stdscr.getmaxyx()
+    curses.init_pair(20, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(21, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    
+    # 1. EFECTO GLITCH / LLUVIA DE CARACTERES (Simulando la inyección rápida)
+    hablar("Inyectando carga útil. Ejecutando script automatizado.")
+    start_sim = time.time()
+    while time.time() - start_sim < 3: # 3 segundos de locura
+        stdscr.clear()
+        for _ in range(100):
+            y, x = random.randint(0, alto-1), random.randint(0, ancho-1)
+            char = random.choice("!@#$%^&*()_+{}:<>?abcdef0123456789")
+            color = random.choice([curses.color_pair(10), curses.color_pair(20), curses.color_pair(2)])
+            try:
+                stdscr.addch(y, x, char, color)
+            except: pass
+        stdscr.refresh()
+        time.sleep(0.05)
 
-    misiones = [
-        {
-            "titulo": "FASE 1: INTEGRIDAD DE LA EVIDENCIA (HASHING)",
-            "contexto": "En forense, necesitamos asegurar que el archivo no ha sido manipulado. Usaremos un algoritmo matemático para sacar su 'huella digital'.",
-            "anatomia": [
-                ("sha256sum", "Es la herramienta que calcula la huella matemática."),
-                ("evidencia_001.img", "Es el archivo sospechoso que vamos a analizar.")
-            ],
-            "comando_esperado": "sha256sum evidencia_001.img"
-        },
-        {
-            "titulo": "FASE 2: DUPLICACIÓN BIT A BIT (CLONADO)",
-            "contexto": "Nunca trabajamos sobre la evidencia original para no dañarla. Vamos a crear una copia exacta de respaldo.",
-            "anatomia": [
-                ("cp", "Comando base de Linux para Copiar (Copy)."),
-                ("evidencia_001.img", "El archivo de ORIGEN (lo que queremos copiar)."),
-                ("backup_evidencia.img", "El archivo de DESTINO (el nuevo clon que crearemos).")
-            ],
-            "comando_esperado": "cp evidencia_001.img backup_evidencia.img"
-        },
-        {
-            "titulo": "FASE 3: BÚSQUEDA DE METADATOS OCULTOS",
-            "contexto": "El sospechoso ocultó una bandera de texto dentro del disco binario. Vamos a extraer todo el texto y a filtrarlo.",
-            "anatomia": [
-                ("strings", "Extrae todo el texto legible oculto en el archivo binario."),
-                ("|", "Se llama 'Pipe' (tubería). Pasa el resultado al siguiente comando."),
-                ("grep FLAG", "Filtra la avalancha de texto y solo te muestra la línea que dice 'FLAG'.")
-            ],
-            "comando_esperado": "strings evidencia_001.img | grep FLAG"
-        }
-    ]
+    # 2. MENSAJE CRÍTICO
+    stdscr.clear()
+    msg_vuln = "¡ERES VULNERABLE!"
+    stdscr.addstr(alto//2 - 2, (ancho//2) - (len(msg_vuln)//2), msg_vuln, curses.color_pair(20) | curses.A_BOLD | curses.A_BLINK)
+    stdscr.refresh()
+    hablar("Sistema comprometido. Eres vulnerable.")
+    time.sleep(2)
 
-    for idx, mision in enumerate(misiones):
-        input_usuario = ""
-        salida_terminal = ""
-        ejecutado = False
-        fase_superada = False
+    # 3. DISCLAIMER Y ADVERTENCIA
+    stdscr.clear()
+    disclaimer = (
+        "AVISO DE SEGURIDAD:\n\n"
+        "El uso de herramientas HID como USB Rubber Ducky puede comprometer "
+        "un sistema en cuestion de segundos sin dejar rastro. Como estudiantes "
+        "de CiberSeguridad, tienen la responsabilidad ética de usar este "
+        "conocimiento solo para la defensa y auditoría autorizada."
+    )
+    y_disc = draw_text_wrapped(stdscr, alto//3, ancho//2 - 25, disclaimer, 50, curses.color_pair(2))
+    
+    # ADVERTENCIA EN AMARILLO Y MAYÚSCULAS
+    adv = "ÚSALA BAJO TUS PROPIAS CONSECUENCIAS"
+    stdscr.addstr(y_disc + 2, (ancho//2) - (len(adv)//2), adv, curses.color_pair(21) | curses.A_BOLD)
+    
+    stdscr.addstr(alto-4, (ancho//2) - 10, "[ ENTER PARA CONTINUAR ]", curses.A_BLINK)
+    stdscr.refresh()
+    
+    while True:
+        k = stdscr.getch()
+        if k in [10, 13]: break
 
-        while True:
+def ejecutar_modulo(stdscr, comandos, titulo):
+    start_time = time.time()
+    for idx, m in enumerate(comandos):
+        input_user = ""
+        exito = False
+        voz_lista = False
+        
+        while not exito:
             stdscr.clear()
             alto, ancho = stdscr.getmaxyx()
             mx = int(ancho * 0.1)
-            ancho_t = ancho - (mx * 2)
+            t_act = time.time() - start_time
 
-            stdscr.addstr(2, mx, f">> SISTEMA FORENSE - NODO {idx+1}/{len(misiones)}", curses.color_pair(10) | curses.A_BOLD)
-            stdscr.addstr(4, mx, mision['titulo'], curses.color_pair(3) | curses.A_BOLD)
-            y_act = draw_text_wrapped(stdscr, 6, mx, mision['contexto'], ancho_t, curses.color_pair(2))
-
-            y_act += 2
-            stdscr.addstr(y_act, mx, ">> ANATOMIA DEL COMANDO:", curses.color_pair(10))
-            y_act += 1
-            for parte, explicacion in mision['anatomia']:
-                stdscr.addstr(y_act, mx + 3, parte, curses.color_pair(4) | curses.A_BOLD)
-                stdscr.addstr(y_act, mx + 3 + len(parte) + 2, f"-> {explicacion}", curses.color_pair(2))
-                y_act += 1
-
-            y_act += 1
-            stdscr.addstr(y_act, mx, ">> ACCIÓN REQUERIDA:", curses.color_pair(10))
-            stdscr.addstr(y_act + 1, mx, "Escribe exactamente este comando y presiona ENTER:", curses.color_pair(2))
-            stdscr.addstr(y_act + 2, mx + 3, mision['comando_esperado'], curses.color_pair(3) | curses.A_BOLD)
-
-            if ejecutado:
-                y_act += 4
-                stdscr.addstr(y_act, mx, "--- RESULTADO EN EL KERNEL ---", curses.color_pair(4) | curses.A_BOLD)
-                lineas = salida_terminal.split('\n')[-6:] 
-                for i, l in enumerate(lineas):
-                    try:
-                        stdscr.addstr(y_act + 1 + i, mx, l[:ancho_t], curses.color_pair(2))
-                    except:
-                        pass
-
-            y_prompt = alto - 4
-            prompt = "ROOT@FORENSE:~# "
-            stdscr.addstr(y_prompt, mx, prompt, curses.color_pair(11) | curses.A_BOLD)
+            stdscr.addstr(2, mx, f"MODULO 2: {titulo} | {idx+1}/{len(comandos)}", curses.color_pair(10) | curses.A_BOLD)
+            stdscr.addstr(2, ancho - mx - 15, f"T: {format_time(t_act)}", curses.color_pair(10))
             
-            if fase_superada:
-                msg_avanzar = "[ PULSA ENTER PARA CONTINUAR ]"
-                stdscr.addstr(y_prompt, mx + len(prompt), msg_avanzar, curses.color_pair(10) | curses.A_BLINK)
-                stdscr.refresh()
-                k = stdscr.getch()
-                if k in [10, 13]: 
-                    break 
-                continue
+            stdscr.addstr(4, mx, "COMANDO OBJETIVO:", curses.A_BOLD)
+            stdscr.addstr(5, mx, m['cmd'], curses.color_pair(4) | curses.A_BOLD)
+            
+            y_act = draw_text_wrapped(stdscr, 7, mx, f"ANÁLISIS: {m['desc']}", ancho-mx*2, curses.color_pair(2))
+            
+            y_act += 2
+            stdscr.addstr(y_act, mx, "--- OUTPUT ESPERADO EN KALI ---", curses.A_DIM)
+            stdscr.addstr(y_act+1, mx, f"root@kali:~# {m['cmd']}", curses.color_pair(2))
+            draw_text_wrapped(stdscr, y_act+2, mx, m['out'], ancho-mx*2, curses.color_pair(3))
 
-            for i, char in enumerate(input_usuario):
-                color = curses.color_pair(3)
-                if i >= len(mision['comando_esperado']) or char != mision['comando_esperado'][i]:
-                    color = curses.color_pair(11)
-                stdscr.addstr(y_prompt, mx + len(prompt) + i, char, color | curses.A_BOLD)
+            stdscr.addstr(alto-4, mx, "HID-ACADEMY# ", curses.A_BOLD)
+            
+            # Dibujar input
+            for i, c in enumerate(input_user):
+                stdscr.addstr(alto-4, mx + 13 + i, c, curses.color_pair(3) | curses.A_BOLD)
 
             stdscr.refresh()
-            
+
+            if not voz_lista:
+                hablar(f"Instrucción: {m['desc']}")
+                voz_lista = True
+
+            stdscr.timeout(100)
             k = stdscr.getch()
 
-            if k in (127, 8, curses.KEY_BACKSPACE):
-                input_usuario = input_usuario[:-1]
+            if k in [10, 13]: # ENTER
+                if input_user.strip() == m['cmd']:
+                    exito = True
+                    hablar("Correcto", rate=400)
+                else: input_user = ""
+            elif k in [127, 8, curses.KEY_BACKSPACE]:
+                input_user = input_user[:-1]
             elif 32 <= k <= 126:
-                input_usuario += chr(k)
-            elif k in [10, 13]: 
-                if input_usuario.strip() == "": continue
-                
-                stdscr.addstr(y_prompt + 2, mx, "[*] Procesando en el Kernel de Kali...", curses.color_pair(10) | curses.A_BLINK)
-                stdscr.refresh()
-                
-                try:
-                    res = subprocess.run(input_usuario, shell=True, capture_output=True, text=True, timeout=5)
-                    salida_terminal = res.stdout + res.stderr
-                    ejecutado = True
-                    
-                    if " ".join(input_usuario.split()) == mision['comando_esperado']:
-                        salida_terminal += "\n\n[+] OPERACIÓN CONFIRMADA: Evidencia asegurada."
-                        fase_superada = True
-                    else:
-                        salida_terminal += "\n\n[-] ERROR: Comando incorrecto. Revise la sintaxis y los colores."
-                        input_usuario = "" 
-                except Exception as e:
-                    salida_terminal = f"Error: {str(e)}"
-                    input_usuario = ""
+                char = chr(k)
+                # ERROR CRÍTICO: BORRADO TOTAL
+                pos = len(input_user)
+                if pos < len(m['cmd']) and char == m['cmd'][pos]:
+                    input_user += char
+                else:
+                    input_user = "" 
+                    hablar("Error", rate=500)
+            elif k == 27: return False, 0
+            
+    return True, time.time() - start_time
 
-            elif k == 27: 
-                limpiar_evidencia()
-                return
+def iniciar(stdscr):
+    curses.init_pair(10, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(11, curses.COLOR_RED, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
 
-    # --- PANTALLA FINAL: EXPLICACIÓN MODO "NIÑO DE PRIMARIA" ---
-    stdscr.clear()
-    alto, ancho = stdscr.getmaxyx()
-    mx = int(ancho * 0.1)
-    ancho_t = ancho - (mx * 2)
-
-    titulo_final = "=== RESUMEN DE LA MISIÓN ==="
-    stdscr.addstr(2, max(0, (ancho // 2) - (len(titulo_final) // 2)), titulo_final, curses.color_pair(10) | curses.A_BOLD)
-
-    texto_explicativo = (
-        "¡Lo lograste! Acabas de actuar como un verdadero detective digital. "
-        "Para que nunca se te olvide lo que hiciste hoy, imagínalo así:\n\n"
-        "1. EL CANDADO MÁGICO (sha256sum):\n"
-        "Imagina que el archivo sospechoso es un diario secreto. El comando 'sha256sum' "
-        "le puso un candado mágico que toma una foto de cada letra adentro. Si el malo "
-        "intenta borrar o cambiar una sola coma del diario, el candado se rompe y nos avisa. "
-        "¡Así demostramos frente a un juez que nadie tocó la evidencia!\n\n"
-        "2. LA COPIA DEL VIDEOJUEGO (cp):\n"
-        "Nunca, pero NUNCA, jugamos con la evidencia original. Usamos el comando 'cp' para hacer "
-        "un clon exacto, como cuando guardas la partida en un videojuego antes de ir a pelear "
-        "contra un jefe. Así, si nos equivocamos investigando y rompemos algo, el archivo "
-        "original sigue a salvo en su cajita de cristal.\n\n"
-        "3. EL PERRITO SABUESO (strings + grep):\n"
-        "El malo rompió una carta y la tiró a la basura (el archivo .img). El comando 'strings' "
-        "es como una lupa gigante que rescata todas las letras legibles de esa basura. "
-        "Pero como leer tanta basura da pereza, usamos 'grep', que actúa como un perrito sabueso "
-        "entrenado. Le dijimos: '¡Busca la palabra FLAG!' y él fue corriendo a traernos justo lo que queríamos.\n\n"
-        ">> Presiona ENTER para volver al menú principal..."
-    )
-
-    draw_text_wrapped(stdscr, 4, mx, texto_explicativo, ancho_t, curses.color_pair(2))
-    stdscr.refresh()
-
-    while True:
-        k = stdscr.getch()
-        if k in [10, 13]:
-            break
-
-    limpiar_evidencia()
+    exito, duracion = ejecutar_modulo(stdscr, misiones_ducky, "ATAQUE HID - RUBBER DUCKY")
+    
+    if exito:
+        simulacion_ataque(stdscr)
