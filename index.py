@@ -91,8 +91,8 @@ def draw_shell(stdscr):
     
     opciones = [
         " 1. Fundamentos de Bash y Supervivencia ",
-        " 2. Preservación y Adquisición de Evidencia ",
-        " 3. Recuperación de Datos y Análisis ",
+        " 2. Programa un Rubber-Ducky",
+        " 3. Imagen Infectada (Virus)",
         " 4. Análisis Forense de Memoria RAM ",
         " 5. Forense de Redes y Tráfico ",
         " [ SALIR DEL SISTEMA ] "
@@ -189,14 +189,6 @@ def draw_shell(stdscr):
             if fila_seleccionada == 0:
                 stdscr.clear()
                 nivel1.iniciar(stdscr)
-                curses.curs_set(0)
-            elif fila_seleccionada == 1:
-                stdscr.clear()
-                nivel2.iniciar(stdscr)
-                curses.curs_set(0)
-            elif fila_seleccionada == 2:
-                stdscr.clear()
-                nivel3.iniciar(stdscr)
                 curses.curs_set(0)
             else:
                 stdscr.clear()
