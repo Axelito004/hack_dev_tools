@@ -185,10 +185,10 @@ for m in misiones_extremo_final: m['diff'] = "EXTREMO"
 
 # Tiempos límite en segundos para el modo CONTRARRELOJ
 limites_tiempo = {
-    "FÁCIL": 300,   # 5 min
-    "MEDIO": 780,   # 13 min
-    "DIFÍCIL": 1320, # 22 min
-    "EXTREMO": 2100 # 35 min
+    "FÁCIL": 150,   # 2 min y medio
+    "MEDIO": 600,   # 10 min
+    "DIFÍCIL": 1080, # 18 min
+    "EXTREMO": 1680 # 28 min
 }
 
 # --- GENERADOR DE CERTIFICADO ---
