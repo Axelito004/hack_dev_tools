@@ -5,7 +5,7 @@ import textwrap
 import random
 
 # --- MOTOR DE VOZ ASÍNCRONO/SÍNCRONO ---
-def hablar(texto, rate=200, esperar=False):
+def hablar(texto, rate=180, esperar=False):
     try:
         texto_limpio = texto.replace('"', '').replace("'", "")
         comando_bash = f'espeak-ng -s {rate} -v es -g 2 "{texto_limpio}" 2>/dev/null'
