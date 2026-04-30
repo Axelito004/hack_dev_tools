@@ -4,9 +4,6 @@ import os
 import textwrap
 import random
 
-# --- MOTOR DE VOZ ASÍNCRONO/SÍNCRONO ---
-# --- MOTOR DE VOZ LOQUENDO (gTTS) ---
-# --- MOTOR DE VOZ IA (EDGE-TTS - LOQUENDO) ---
 # --- MOTOR DE VOZ IA (EDGE-TTS - LOQUENDO) ---
 def hablar(texto, rate=280, esperar=False):
     try:
@@ -278,6 +275,7 @@ def generar_comprobante(stdscr, estadisticas):
 # --- MOTOR DE MISIONES ---
 def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite=0):
     start_time_nivel = time.time()
+    tiempo_hablando = 0 # ACUMULADOR PARA CONGELAR EL TIEMPO
     errores_nivel = 0
     
     for idx, m in enumerate(comandos):
@@ -290,7 +288,9 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
             alto, ancho = stdscr.getmaxyx()
             mx = int(ancho * 0.1)
             
-            tiempo_transcurrido = time.time() - start_time_nivel
+            # Restamos el tiempo que la IA pasó hablando
+            tiempo_transcurrido = time.time() - start_time_nivel - tiempo_hablando
+            if tiempo_transcurrido < 0: tiempo_transcurrido = 0
             
             # --- LÓGICA DE TIEMPO SEGÚN EL MODO ---
             if modo == "CONTRARRELOJ":
@@ -321,13 +321,20 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
 
             stdscr.addstr(alto-4, mx, "KALI-ACADEMY# ", curses.A_BOLD)
 
+            # --- MANEJO DE VOZ UNIFICADO Y CONGELAMIENTO DE TIEMPO ---
             if not voz_lista:
                 curses.curs_set(0)
                 stdscr.addstr(alto-4, mx + 14, "[ ESCUCHANDO LA VOZ... ]", curses.color_pair(12) | curses.A_BLINK)
                 stdscr.refresh()
 
-                hablar(f"Comando. {m['cmd']}.", rate=200, esperar=True)
-                hablar(f"Explicación. {m['desc']}", rate=200, esperar=True)
+                t_inicio_voz = time.time()
+                
+                # Unimos el texto para hacer una sola llamada a la IA (cero pausas)
+                texto_unido = f"Comando: {m['cmd']}. Explicación: {m['desc']}."
+                hablar(texto_unido, rate=200, esperar=True)
+                
+                # Sumamos este tiempo al acumulador para restarlo del reloj
+                tiempo_hablando += (time.time() - t_inicio_voz)
                 
                 curses.flushinp() 
                 voz_lista = True
@@ -350,7 +357,11 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                 if input_user.strip() == m['cmd']:
                     exito = True
                     curses.curs_set(0)
+                    
+                    # También congelamos el tiempo mientras dice "Correcto"
+                    t_inicio_voz = time.time()
                     hablar("Correcto", rate=240, esperar=True) 
+                    tiempo_hablando += (time.time() - t_inicio_voz)
                 else: input_user = ""
             elif k in [127, 8, curses.KEY_BACKSPACE]:
                 input_user = input_user[:-1]
@@ -373,7 +384,7 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
             
     stdscr.timeout(-1)
     curses.curs_set(0)
-    tiempo_final = time.time() - start_time_nivel
+    tiempo_final = time.time() - start_time_nivel - tiempo_hablando
     return True, tiempo_final, errores_nivel
 
 def iniciar(stdscr):
@@ -392,11 +403,9 @@ def iniciar(stdscr):
     curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
     curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)
 
-    while True: # BUCLE PRINCIPAL DE MODOS
+    while True: 
         curses.curs_set(0)
         
-        # --- AQUÍ ESTÁ LA SOLUCIÓN ---
-        # Obtenemos las dimensiones de la pantalla antes de dibujar cualquier menú
         alto, ancho = stdscr.getmaxyx() 
         
         modos_juego = [
@@ -426,9 +435,8 @@ def iniciar(stdscr):
         if modo_elegido == "SALIR":
             break
             
-        while True: # BUCLE SECUNDARIO DE DIFICULTADES
+        while True: 
             stdscr.clear()
-            # Volvemos a obtener dimensiones por si el usuario redimensionó la terminal
             alto, ancho = stdscr.getmaxyx() 
             
             niveles = [
@@ -458,7 +466,7 @@ def iniciar(stdscr):
             clave = niveles[sel_dif][2]
             
             if clave == "VOLVER": 
-                break # Rompe el bucle de dificultad y vuelve a preguntar por Clásico/Contrarreloj
+                break 
             
             nombre_str = niveles[sel_dif][0].strip()
             lista_cmds = niveles[sel_dif][1]
@@ -496,118 +504,4 @@ def iniciar(stdscr):
                 
                 if res == 1:
                     generar_comprobante(stdscr, estadisticas)
-                    return # Cierra todo el sistema al generar el comprobante
-    estadisticas = {
-        "FÁCIL": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
-        "MEDIO": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
-        "DIFÍCIL": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
-        "EXTREMO": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""}
-    }
-    
-    curses.init_pair(10, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(11, curses.COLOR_RED, curses.COLOR_BLACK)
-    curses.init_pair(12, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
-    curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
-    curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
-    curses.init_pair(5, curses.COLOR_BLACK, curses.COLOR_WHITE)
-
-    while True: # BUCLE PRINCIPAL DE MODOS
-        curses.curs_set(0)
-        
-        modos_juego = [
-            (" MODO CLÁSICO (Sin presión de tiempo) ", "CLASICO", 10), 
-            (" MODO CONTRARRELOJ (Muerte Súbita) ", "CONTRARRELOJ", 11),
-            (" [ SALIR DE LA ACADEMIA ] ", "SALIR", 2)
-        ]
-        
-        sel_modo = 0
-        while True:
-            stdscr.clear()
-            stdscr.addstr(2, (ancho//2)-15, "--- ACADEMIA KALI YARACUY ---", curses.A_BOLD)
-            stdscr.addstr(4, (ancho//2)-14, "SELECCIONA EL MODO DE JUEGO", curses.color_pair(4))
-            
-            for i, (txt, _, col) in enumerate(modos_juego):
-                estilo_base = curses.color_pair(col)
-                estilo = estilo_base | curses.A_REVERSE if i == sel_modo else estilo_base
-                stdscr.addstr(6+i, (ancho//2)-len(txt)//2, txt, estilo)
-                
-            k = stdscr.getch()
-            if k == curses.KEY_UP and sel_modo > 0: sel_modo -= 1
-            elif k == curses.KEY_DOWN and sel_modo < len(modos_juego)-1: sel_modo += 1
-            elif k in [10, 13]: break
-            
-        modo_elegido = modos_juego[sel_modo][1]
-        
-        if modo_elegido == "SALIR":
-            break
-            
-        while True: # BUCLE SECUNDARIO DE DIFICULTADES
-            stdscr.clear()
-            alto, ancho = stdscr.getmaxyx()
-            niveles = [
-                (" 1. NIVEL RECLUTA (Facil) ", misiones_facil, "FÁCIL", 10),
-                (" 2. NIVEL AGENTE (Medio) ", misiones_medio, "MEDIO", 12),
-                (" 3. NIVEL ESPECIALISTA (Dificil) ", misiones_dificil, "DIFÍCIL", 11),
-                (" 4. MODO EXTREMO (Aleatorio + Bosses) ", None, "EXTREMO", 5), 
-                (" [ VOLVER AL MENU DE MODOS ] ", None, "VOLVER", 2)
-            ]
-            
-            sel_dif = 0
-            while True:
-                stdscr.clear()
-                stdscr.addstr(2, (ancho//2)-15, "--- ACADEMIA KALI YARACUY ---", curses.A_BOLD)
-                stdscr.addstr(4, (ancho//2)-22, f"MODO: {modo_elegido} - SELECCIONA DIFICULTAD", curses.color_pair(4))
-                
-                for i, (txt, _, _, col) in enumerate(niveles):
-                    estilo_base = curses.color_pair(col)
-                    estilo = estilo_base | curses.A_REVERSE if i == sel_dif else estilo_base
-                    stdscr.addstr(6+i, (ancho//2)-18, txt.center(36), estilo)
-                    
-                k = stdscr.getch()
-                if k == curses.KEY_UP and sel_dif > 0: sel_dif -= 1
-                elif k == curses.KEY_DOWN and sel_dif < len(niveles)-1: sel_dif += 1
-                elif k in [10, 13]: break
-            
-            clave = niveles[sel_dif][2]
-            
-            if clave == "VOLVER": 
-                break # Rompe el bucle de dificultad y vuelve a preguntar por Clásico/Contrarreloj
-            
-            nombre_str = niveles[sel_dif][0].strip()
-            lista_cmds = niveles[sel_dif][1]
-            
-            if clave == "EXTREMO":
-                combinacion = misiones_facil + misiones_medio + misiones_dificil
-                random.shuffle(combinacion)
-                lista_cmds = combinacion + misiones_extremo_final
-                nombre_str = "MODO EXTREMO"
-
-            tiempo_limite_nivel = limites_tiempo[clave] if modo_elegido == "CONTRARRELOJ" else 0
-
-            exito, duracion, errores = ejecutar_nivel(stdscr, lista_cmds, nombre_str, modo=modo_elegido, tiempo_limite=tiempo_limite_nivel)
-            
-            if exito:
-                estadisticas[clave]['tiempo'] = duracion
-                estadisticas[clave]['errores'] = errores
-                estadisticas[clave]['rango'] = calcular_rango(errores)
-                estadisticas[clave]['modo'] = modo_elegido
-                
-                opcs = [" PASAR A OTRO NIVEL ", " FINALIZAR Y GENERAR COMPROBANTE "]
-                res = 0
-                while True:
-                    curses.curs_set(0)
-                    stdscr.clear()
-                    stdscr.addstr(alto//2-4, (ancho//2)-15, f"¡FASE {clave} COMPLETADA!", curses.color_pair(10) | curses.A_BOLD)
-                    stdscr.addstr(alto//2-2, (ancho//2)-15, f"Rango Obtenido: {estadisticas[clave]['rango']}", curses.color_pair(12))
-                    
-                    for i, o in enumerate(opcs):
-                        stdscr.addstr(alto//2+i, (ancho//2)-15, o, curses.A_REVERSE if i == res else curses.A_NORMAL)
-                    k = stdscr.getch()
-                    if k == curses.KEY_UP: res = 0
-                    elif k == curses.KEY_DOWN: res = 1
-                    elif k in [10, 13]: break
-                
-                if res == 1:
-                    generar_comprobante(stdscr, estadisticas)
-                    return # Cierra todo el sistema al generar el comprobante
+                    return
