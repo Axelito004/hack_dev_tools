@@ -5,10 +5,25 @@ import textwrap
 import random
 
 # --- MOTOR DE VOZ ASÍNCRONO/SÍNCRONO ---
-def hablar(texto, rate=180, esperar=False):
+# --- MOTOR DE VOZ LOQUENDO (gTTS) ---
+# --- MOTOR DE VOZ IA (EDGE-TTS - LOQUENDO) ---
+# --- MOTOR DE VOZ IA (EDGE-TTS - LOQUENDO) ---
+def hablar(texto, rate=280, esperar=False):
     try:
         texto_limpio = texto.replace('"', '').replace("'", "")
-        comando_bash = f'espeak-ng -s {rate} -v es -g 2 "{texto_limpio}" 2>/dev/null'
+        
+        # Traductor de velocidad: Convertimos la velocidad vieja al formato de Edge-TTS
+        if rate == 200:
+            velocidad = "+15%"  # Base: Un poquito más rápido de lo normal
+        elif rate == 240:
+            velocidad = "+25%"  # Rápido: Para confirmar "Correcto"
+        elif rate >= 280:
+            velocidad = "+40%"  # Muy rápido: Para avisar del "Error"
+        else:
+            velocidad = "+15%"
+
+        # Inyectamos el parámetro --rate con la velocidad calculada
+        comando_bash = f'edge-tts --voice es-MX-JorgeNeural --rate="{velocidad}" --text "{texto_limpio}" | mpg123 -q - 2>/dev/null'
         
         if not esperar:
             comando_bash += ' &' 

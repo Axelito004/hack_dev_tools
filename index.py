@@ -11,18 +11,28 @@ import os
 # Configurar soporte para caracteres especiales (UTF-8)
 locale.setlocale(locale.LC_ALL, '')
 
-def hablar(texto, rate=200):
+# --- MOTOR DE VOZ LOQUENDO (gTTS) ---
+def hablar(texto, rate=280, esperar=False):
     try:
         texto_limpio = texto.replace('"', '').replace("'", "")
-        os.system(f'espeak-ng -s {rate} -v es "{texto_limpio}" 2>/dev/null')
-    except:
-        pass
+        
+        # Traductor de velocidad: Convertimos la velocidad vieja al formato de Edge-TTS
+        if rate == 200:
+            velocidad = "+15%"  # Base: Un poquito más rápido de lo normal
+        elif rate == 240:
+            velocidad = "+25%"  # Rápido: Para confirmar "Correcto"
+        elif rate >= 280:
+            velocidad = "+40%"  # Muy rápido: Para avisar del "Error"
+        else:
+            velocidad = "+15%"
 
-def hablar_async(texto, rate=400):
-    try:
-        texto_limpio = texto.replace('"', '').replace("'", "")
-        os.system('killall espeak-ng 2>/dev/null')
-        os.system(f'espeak-ng -s {rate} -v es "{texto_limpio}" 2>/dev/null &')
+        # Inyectamos el parámetro --rate con la velocidad calculada
+        comando_bash = f'edge-tts --voice es-MX-JorgeNeural --rate="{velocidad}" --text "{texto_limpio}" | mpg123 -q - 2>/dev/null'
+        
+        if not esperar:
+            comando_bash += ' &' 
+            
+        os.system(comando_bash)
     except:
         pass
 
@@ -40,7 +50,7 @@ def draw_shell(stdscr):
     # --- 1. BIENVENIDA AUDITIVA ---
     stdscr.clear()
     msg_pantalla = ">> ESTABLECIENDO CONEXION SEGURA CON EL NODO CENTRAL..."
-    msg_voz = "Conexión establecida. Bienvenido, Aspirante. Sistema de hackeo Fundasite Yaracuy en línea."
+    msg_voz = "Conexión establecida. Bienvenido, Aspirante. Sistema de ja queo Fundacite Yaracuy en línea."
     
     alto, ancho = stdscr.getmaxyx()
     
@@ -193,6 +203,10 @@ def draw_shell(stdscr):
             elif fila_seleccionada == 1:
                 stdscr.clear()
                 nivel2.iniciar(stdscr)
+                curses.curs_set(0)
+            elif fila_seleccionada == 2:
+                stdscr.clear()
+                nivel3.iniciar(stdscr)
                 curses.curs_set(0)
             else:
                 stdscr.clear()
