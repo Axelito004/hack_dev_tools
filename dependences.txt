@@ -18,6 +18,14 @@ echo "[3/3] Instalando dependencias de Python..."
 # Usamos --break-system-packages para entornos de Kali modernos donde pip es estricto, 
 # o puedes usar un entorno virtual (venv) si lo prefieres.
 pip install pyttsx3 --break-system-packages 2>/dev/null || pip3 install pyttsx3 2>/dev/null
+sudo apt-get install mpg123
+pip install gTTS --break-system-packages
+sudo apt update
+sudo apt install pipx
+pipx ensurepath
+pipx install gtts
+pipx install edge-tts
+
 
 echo ""
 echo "==================================================="
