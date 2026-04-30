@@ -15,7 +15,7 @@ def hablar(texto, rate=280, esperar=False):
         elif rate == 240:
             velocidad = "+25%"  # Rápido: Para confirmar "Correcto"
         elif rate >= 280:
-            velocidad = "+40%"  # Muy rápido: Para avisar del "Error"
+            velocidad = "+100%"  # Muy rápido: Para avisar del "Error"
         else:
             velocidad = "+15%"
 
@@ -28,6 +28,30 @@ def hablar(texto, rate=280, esperar=False):
         os.system(comando_bash)
     except:
         pass
+
+# --- TRADUCTOR FONÉTICO PARA MODO A CIEGAS ---
+def deletrear(cmd):
+    """Traduce símbolos a palabras para que la IA los lea claramente."""
+    res = []
+    for char in cmd:
+        if char == ' ': res.append('espacio')
+        elif char == '-': res.append('guion')
+        elif char == '/': res.append('barra')
+        elif char == '.': res.append('punto')
+        elif char == '*': res.append('asterisco')
+        elif char == '_': res.append('guion bajo')
+        elif char == ':': res.append('dos puntos')
+        elif char == ';': res.append('punto y coma')
+        elif char == '>': res.append('mayor que')
+        elif char == '<': res.append('menor que')
+        elif char == '&': res.append('ampersand')
+        elif char == '|': res.append('tuberia')
+        elif char == '\\': res.append('barra invertida')
+        elif char == "'": res.append('comilla simple')
+        elif char == '"': res.append('comillas dobles')
+        elif char.isupper(): res.append(f'{char.lower()} mayúscula')
+        else: res.append(char)
+    return " . ".join(res)
 
 def format_time(segundos):
     mins = int(segundos // 60)
@@ -195,16 +219,15 @@ for m in misiones_medio: m['diff'] = "MEDIO"
 for m in misiones_dificil: m['diff'] = "DIFÍCIL"
 for m in misiones_extremo_final: m['diff'] = "EXTREMO"
 
-# Tiempos límite en segundos para el modo CONTRARRELOJ
 limites_tiempo = {
-    "FÁCIL": 150,   # 2 min y medio
-    "MEDIO": 600,   # 10 min
-    "DIFÍCIL": 1080, # 18 min
-    "EXTREMO": 1680 # 28 min
+    "FÁCIL": 150,   
+    "MEDIO": 600,   
+    "DIFÍCIL": 1080, 
+    "EXTREMO": 1680 
 }
 
 # --- GENERADOR DE CERTIFICADO ---
-def generar_comprobante(stdscr, estadisticas):
+def generar_comprobante(stdscr, estadisticas, info_modo="N/A"):
     curses.curs_set(1)
     stdscr.clear()
     alto, ancho = stdscr.getmaxyx()
@@ -233,7 +256,7 @@ def generar_comprobante(stdscr, estadisticas):
     tiempo_total = 0
     for nivel, data in estadisticas.items():
         if data['tiempo'] > 0:
-            modo_texto = "CONTRARRELOJ" if data['modo'] == "CONTRARRELOJ" else "CLÁSICO"
+            modo_texto = data['modo']
             reporte_tiempos += f"   - NIVEL {nivel} | MODO: {modo_texto} | Rango: {data['rango']} | Errores cometidos: {data['errores']} | Tiempo: {format_time(data['tiempo'])}\n"
             tiempo_total += data['tiempo']
 
@@ -275,7 +298,7 @@ def generar_comprobante(stdscr, estadisticas):
 # --- MOTOR DE MISIONES ---
 def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite=0):
     start_time_nivel = time.time()
-    tiempo_hablando = 0 # ACUMULADOR PARA CONGELAR EL TIEMPO
+    tiempo_hablando = 0 
     errores_nivel = 0
     
     for idx, m in enumerate(comandos):
@@ -288,66 +311,88 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
             alto, ancho = stdscr.getmaxyx()
             mx = int(ancho * 0.1)
             
-            # Restamos el tiempo que la IA pasó hablando
             tiempo_transcurrido = time.time() - start_time_nivel - tiempo_hablando
             if tiempo_transcurrido < 0: tiempo_transcurrido = 0
             
-            # --- LÓGICA DE TIEMPO SEGÚN EL MODO ---
-            if modo == "CONTRARRELOJ":
-                tiempo_restante = tiempo_limite - tiempo_transcurrido
-                if tiempo_restante <= 0:
-                    curses.curs_set(0)
-                    stdscr.clear()
-                    stdscr.addstr(alto//2, ancho//2 - 12, "¡ TIEMPO AGOTADO !", curses.color_pair(11) | curses.A_BLINK | curses.A_BOLD)
-                    stdscr.refresh()
-                    hablar("Tiempo agotado. Misión fracasada.", rate=200, esperar=True)
-                    time.sleep(1)
-                    return False, 0, errores_nivel
+            if "CIEGAS" in modo:
+                if modo == "CIEGAS_PRACTICA":
+                    stdscr.addstr(2, mx, "[ MODO PRÁCTICA ]", curses.color_pair(12) | curses.A_BOLD)
+                    stdscr.addstr(3, mx, "Escucha atentamente el comando, la explicación y el deletreo de la IA.", curses.color_pair(10))
+                    stdscr.addstr(4, mx, "Escribe a ciegas. La terminal solo mostrará tu escritura centrada.", curses.color_pair(10))
                 
-                color_reloj = curses.color_pair(11) | curses.A_BLINK if tiempo_restante <= 10 else curses.color_pair(10)
-                str_tiempo = f"TIEMPO RESTANTE: {format_time(tiempo_restante)}"
+                stdscr.addstr(2, ancho - 35, f"ERRORES: {errores_nivel} | TIEMPO: {format_time(tiempo_transcurrido)}", curses.color_pair(10))
+                
+                pos_x = max(0, (ancho // 2) - (len(input_user) // 2))
+                stdscr.addstr(alto // 2, pos_x, input_user, curses.color_pair(3) | curses.A_BOLD)
+                
             else:
-                color_reloj = curses.color_pair(10)
-                str_tiempo = f"TIEMPO: {format_time(tiempo_transcurrido)}"
+                if modo == "CONTRARRELOJ":
+                    tiempo_restante = tiempo_limite - tiempo_transcurrido
+                    if tiempo_restante <= 0:
+                        curses.curs_set(0)
+                        stdscr.clear()
+                        stdscr.addstr(alto//2, ancho//2 - 12, "¡ TIEMPO AGOTADO !", curses.color_pair(11) | curses.A_BLINK | curses.A_BOLD)
+                        stdscr.refresh()
+                        hablar("Tiempo agotado. Misión fracasada.", rate=200, esperar=True)
+                        time.sleep(1)
+                        return False, 0, errores_nivel
+                    color_reloj = curses.color_pair(11) | curses.A_BLINK if tiempo_restante <= 10 else curses.color_pair(10)
+                    str_tiempo = f"TIEMPO REST: {format_time(tiempo_restante)}"
+                else:
+                    color_reloj = curses.color_pair(10)
+                    str_tiempo = f"TIEMPO: {format_time(tiempo_transcurrido)}"
 
-            etiqueta_dif = f" [{m.get('diff', '')}]" if nombre_nivel == "MODO EXTREMO" else ""
-            
-            stdscr.addstr(2, mx, f"MODULO: {nombre_nivel}{etiqueta_dif} | FASE: {idx+1}/{len(comandos)} | MODO: {modo}", curses.color_pair(12) | curses.A_BOLD)
-            stdscr.addstr(2, ancho - mx - 40, f"ERRORES: {errores_nivel} | {str_tiempo}", color_reloj)
-            
-            stdscr.addstr(4, mx, "COMANDO:", curses.A_BOLD)
-            stdscr.addstr(5, mx, m['cmd'], curses.color_pair(4) | curses.A_BOLD)
-            y_act = draw_text_wrapped(stdscr, 7, mx, f"INFO: {m['desc']}\n\n--- SALIDA ESPERADA ---\nroot@kali:~# {m['cmd']}\n{m['out']}", ancho-mx*2, curses.color_pair(2))
+                etiqueta_dif = f" [{m.get('diff', '')}]" if nombre_nivel == "MODO EXTREMO" else ""
+                
+                stdscr.addstr(2, mx, f"MODULO: {nombre_nivel}{etiqueta_dif} | FASE: {idx+1}/{len(comandos)} | MODO: {modo}", curses.color_pair(12) | curses.A_BOLD)
+                stdscr.addstr(2, ancho - mx - 40, f"ERRORES: {errores_nivel} | {str_tiempo}", color_reloj)
+                
+                stdscr.addstr(4, mx, "COMANDO:", curses.A_BOLD)
+                stdscr.addstr(5, mx, m['cmd'], curses.color_pair(4) | curses.A_BOLD)
+                y_act = draw_text_wrapped(stdscr, 7, mx, f"INFO: {m['desc']}\n\n--- SALIDA ESPERADA ---\nroot@kali:~# {m['cmd']}\n{m['out']}", ancho-mx*2, curses.color_pair(2))
 
-            stdscr.addstr(alto-4, mx, "KALI-ACADEMY# ", curses.A_BOLD)
+                stdscr.addstr(alto-4, mx, "KALI-ACADEMY# ", curses.A_BOLD)
 
-            # --- MANEJO DE VOZ UNIFICADO Y CONGELAMIENTO DE TIEMPO ---
+                for i, c in enumerate(input_user):
+                    stdscr.addstr(alto-4, mx + 14 + i, c, curses.color_pair(3) | curses.A_BOLD)
+
             if not voz_lista:
                 curses.curs_set(0)
-                stdscr.addstr(alto-4, mx + 14, "[ ESCUCHANDO LA VOZ... ]", curses.color_pair(12) | curses.A_BLINK)
+                
+                if "CIEGAS" in modo:
+                    stdscr.addstr(alto - 2, ancho // 2 - 12, "[ ESCUCHANDO A LA IA... ]", curses.color_pair(12) | curses.A_BLINK)
+                else:
+                    stdscr.addstr(alto - 4, mx + 14, "[ ESCUCHANDO LA VOZ... ]", curses.color_pair(12) | curses.A_BLINK)
+                
                 stdscr.refresh()
-
                 t_inicio_voz = time.time()
                 
-                # Unimos el texto para hacer una sola llamada a la IA (cero pausas)
-                texto_unido = f"Comando: {m['cmd']}. Explicación: {m['desc']}."
+                if "CIEGAS" in modo:
+                    # IA lee el comando, la explicación, y luego dicta letra por letra
+                    texto_unido = f"Comando: {m['cmd']}. Explicación: {m['desc']}. Deletreo: {deletrear(m['cmd'])}."
+                else:
+                    texto_unido = f"Comando: {m['cmd']}. Explicación: {m['desc']}."
+                    
                 hablar(texto_unido, rate=200, esperar=True)
                 
-                # Sumamos este tiempo al acumulador para restarlo del reloj
                 tiempo_hablando += (time.time() - t_inicio_voz)
-                
                 curses.flushinp() 
                 voz_lista = True
                 
-                stdscr.move(alto-4, mx)
-                stdscr.clrtoeol()
-                stdscr.addstr(alto-4, mx, "KALI-ACADEMY# ", curses.A_BOLD)
-
-            for i, c in enumerate(input_user):
-                stdscr.addstr(alto-4, mx + 14 + i, c, curses.color_pair(3) | curses.A_BOLD)
+                if "CIEGAS" in modo:
+                    stdscr.move(alto - 2, 0)
+                    stdscr.clrtoeol()
+                else:
+                    stdscr.move(alto-4, mx)
+                    stdscr.clrtoeol()
+                    stdscr.addstr(alto-4, mx, "KALI-ACADEMY# ", curses.A_BOLD)
 
             curses.curs_set(1)
-            stdscr.move(alto-4, mx + 14 + len(input_user))
+            if "CIEGAS" in modo:
+                stdscr.move(alto // 2, pos_x + len(input_user))
+            else:
+                stdscr.move(alto-4, mx + 14 + len(input_user))
+            
             stdscr.refresh()
 
             stdscr.timeout(100)
@@ -357,8 +402,6 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                 if input_user.strip() == m['cmd']:
                     exito = True
                     curses.curs_set(0)
-                    
-                    # También congelamos el tiempo mientras dice "Correcto"
                     t_inicio_voz = time.time()
                     hablar("Correcto", rate=240, esperar=True) 
                     tiempo_hablando += (time.time() - t_inicio_voz)
@@ -377,7 +420,13 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                     
                     input_user = "" 
                     errores_nivel += 1
-                    hablar("Error", rate=280, esperar=False) 
+                    
+                    # Refuerzo a ciegas: Si te equivocas, vuelve a deletrear para que no te pierdas
+                    if "CIEGAS" in modo:
+                        hablar(f"Error. Repito: {deletrear(m['cmd'])}", rate=240, esperar=False)
+                    else:
+                        hablar("Error", rate=280, esperar=False) 
+                        
             elif k == 27: 
                 curses.curs_set(0)
                 return False, 0, 0
@@ -392,7 +441,8 @@ def iniciar(stdscr):
         "FÁCIL": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
         "MEDIO": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
         "DIFÍCIL": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
-        "EXTREMO": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""}
+        "EXTREMO": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""},
+        "CIEGAS": {"tiempo": 0, "errores": 0, "rango": "", "modo": ""} 
     }
     
     curses.init_pair(10, curses.COLOR_GREEN, curses.COLOR_BLACK)
@@ -405,12 +455,12 @@ def iniciar(stdscr):
 
     while True: 
         curses.curs_set(0)
-        
         alto, ancho = stdscr.getmaxyx() 
         
         modos_juego = [
             (" MODO CLÁSICO (Sin presión de tiempo) ", "CLASICO", 10), 
             (" MODO CONTRARRELOJ (Muerte Súbita) ", "CONTRARRELOJ", 11),
+            (" MODO A CIEGAS (Entrenamiento Auditivo) ", "CIEGAS", 12),
             (" [ SALIR DE LA ACADEMIA ] ", "SALIR", 2)
         ]
         
@@ -435,73 +485,119 @@ def iniciar(stdscr):
         if modo_elegido == "SALIR":
             break
             
-        while True: 
-            stdscr.clear()
-            alto, ancho = stdscr.getmaxyx() 
-            
-            niveles = [
-                (" 1. NIVEL RECLUTA (Facil) ", misiones_facil, "FÁCIL", 10),
-                (" 2. NIVEL AGENTE (Medio) ", misiones_medio, "MEDIO", 12),
-                (" 3. NIVEL ESPECIALISTA (Dificil) ", misiones_dificil, "DIFÍCIL", 11),
-                (" 4. MODO EXTREMO (Aleatorio + Bosses) ", None, "EXTREMO", 5), 
-                (" [ VOLVER AL MENU DE MODOS ] ", None, "VOLVER", 2)
+        if modo_elegido == "CIEGAS":
+            sub_ciegas = [
+                (" 1. MODO PRÁCTICA (Comandos Fáciles + Guía) ", "CIEGAS_PRACTICA", 12),
+                (" 2. MODO NORMAL (Todos los Comandos Extremos) ", "CIEGAS_NORMAL", 11),
+                (" [ VOLVER ] ", "VOLVER", 2)
             ]
-            
-            sel_dif = 0
+            sel_ciegas = 0
             while True:
                 stdscr.clear()
                 stdscr.addstr(2, (ancho//2)-15, "--- ACADEMIA KALI YARACUY ---", curses.A_BOLD)
-                stdscr.addstr(4, (ancho//2)-22, f"MODO: {modo_elegido} - SELECCIONA DIFICULTAD", curses.color_pair(4))
+                stdscr.addstr(4, (ancho//2)-14, "OPCIONES DE MODO A CIEGAS", curses.color_pair(12))
+                for i, (txt, _, col) in enumerate(sub_ciegas):
+                    estilo = curses.color_pair(col) | curses.A_REVERSE if i == sel_ciegas else curses.color_pair(col)
+                    stdscr.addstr(6+i, (ancho//2)-len(txt)//2, txt, estilo)
                 
-                for i, (txt, _, _, col) in enumerate(niveles):
-                    estilo_base = curses.color_pair(col)
-                    estilo = estilo_base | curses.A_REVERSE if i == sel_dif else estilo_base
-                    stdscr.addstr(6+i, (ancho//2)-18, txt.center(36), estilo)
-                    
                 k = stdscr.getch()
-                if k == curses.KEY_UP and sel_dif > 0: sel_dif -= 1
-                elif k == curses.KEY_DOWN and sel_dif < len(niveles)-1: sel_dif += 1
+                if k == curses.KEY_UP and sel_ciegas > 0: sel_ciegas -= 1
+                elif k == curses.KEY_DOWN and sel_ciegas < len(sub_ciegas)-1: sel_ciegas += 1
                 elif k in [10, 13]: break
-            
-            clave = niveles[sel_dif][2]
-            
-            if clave == "VOLVER": 
-                break 
-            
-            nombre_str = niveles[sel_dif][0].strip()
-            lista_cmds = niveles[sel_dif][1]
-            
-            if clave == "EXTREMO":
+                
+            modo_ciegas = sub_ciegas[sel_ciegas][1]
+            if modo_ciegas == "VOLVER":
+                continue 
+                
+            if modo_ciegas == "CIEGAS_PRACTICA":
+                lista_cmds = misiones_facil[:3] 
+                nombre_str = "A CIEGAS (PRÁCTICA)"
+            else:
                 combinacion = misiones_facil + misiones_medio + misiones_dificil
                 random.shuffle(combinacion)
                 lista_cmds = combinacion + misiones_extremo_final
-                nombre_str = "MODO EXTREMO"
+                nombre_str = "A CIEGAS (EXTREMO)"
 
-            tiempo_limite_nivel = limites_tiempo[clave] if modo_elegido == "CONTRARRELOJ" else 0
-
-            exito, duracion, errores = ejecutar_nivel(stdscr, lista_cmds, nombre_str, modo=modo_elegido, tiempo_limite=tiempo_limite_nivel)
+            exito, duracion, errores = ejecutar_nivel(stdscr, lista_cmds, nombre_str, modo=modo_ciegas)
             
             if exito:
-                estadisticas[clave]['tiempo'] = duracion
-                estadisticas[clave]['errores'] = errores
-                estadisticas[clave]['rango'] = calcular_rango(errores)
-                estadisticas[clave]['modo'] = modo_elegido
+                estadisticas["CIEGAS"]['tiempo'] = duracion
+                estadisticas["CIEGAS"]['errores'] = errores
+                estadisticas["CIEGAS"]['rango'] = calcular_rango(errores)
+                estadisticas["CIEGAS"]['modo'] = modo_ciegas
+                generar_comprobante(stdscr, estadisticas)
+                return
+            else:
+                continue 
+
+        else:
+            while True: 
+                stdscr.clear()
+                alto, ancho = stdscr.getmaxyx() 
                 
-                opcs = [" PASAR A OTRO NIVEL ", " FINALIZAR Y GENERAR COMPROBANTE "]
-                res = 0
+                niveles = [
+                    (" 1. NIVEL RECLUTA (Facil) ", misiones_facil, "FÁCIL", 10),
+                    (" 2. NIVEL AGENTE (Medio) ", misiones_medio, "MEDIO", 12),
+                    (" 3. NIVEL ESPECIALISTA (Dificil) ", misiones_dificil, "DIFÍCIL", 11),
+                    (" 4. MODO EXTREMO (Aleatorio + Bosses) ", None, "EXTREMO", 5), 
+                    (" [ VOLVER AL MENU DE MODOS ] ", None, "VOLVER", 2)
+                ]
+                
+                sel_dif = 0
                 while True:
-                    curses.curs_set(0)
                     stdscr.clear()
-                    stdscr.addstr(alto//2-4, (ancho//2)-15, f"¡FASE {clave} COMPLETADA!", curses.color_pair(10) | curses.A_BOLD)
-                    stdscr.addstr(alto//2-2, (ancho//2)-15, f"Rango Obtenido: {estadisticas[clave]['rango']}", curses.color_pair(12))
+                    stdscr.addstr(2, (ancho//2)-15, "--- ACADEMIA KALI YARACUY ---", curses.A_BOLD)
+                    stdscr.addstr(4, (ancho//2)-22, f"MODO: {modo_elegido} - SELECCIONA DIFICULTAD", curses.color_pair(4))
                     
-                    for i, o in enumerate(opcs):
-                        stdscr.addstr(alto//2+i, (ancho//2)-15, o, curses.A_REVERSE if i == res else curses.A_NORMAL)
+                    for i, (txt, _, _, col) in enumerate(niveles):
+                        estilo_base = curses.color_pair(col)
+                        estilo = estilo_base | curses.A_REVERSE if i == sel_dif else estilo_base
+                        stdscr.addstr(6+i, (ancho//2)-18, txt.center(36), estilo)
+                        
                     k = stdscr.getch()
-                    if k == curses.KEY_UP: res = 0
-                    elif k == curses.KEY_DOWN: res = 1
+                    if k == curses.KEY_UP and sel_dif > 0: sel_dif -= 1
+                    elif k == curses.KEY_DOWN and sel_dif < len(niveles)-1: sel_dif += 1
                     elif k in [10, 13]: break
                 
-                if res == 1:
-                    generar_comprobante(stdscr, estadisticas)
-                    return
+                clave = niveles[sel_dif][2]
+                
+                if clave == "VOLVER": 
+                    break 
+                
+                nombre_str = niveles[sel_dif][0].strip()
+                lista_cmds = niveles[sel_dif][1]
+                
+                if clave == "EXTREMO":
+                    combinacion = misiones_facil + misiones_medio + misiones_dificil
+                    random.shuffle(combinacion)
+                    lista_cmds = combinacion + misiones_extremo_final
+                    nombre_str = "MODO EXTREMO"
+
+                tiempo_limite_nivel = limites_tiempo[clave] if modo_elegido == "CONTRARRELOJ" else 0
+
+                exito, duracion, errores = ejecutar_nivel(stdscr, lista_cmds, nombre_str, modo=modo_elegido, tiempo_limite=tiempo_limite_nivel)
+                
+                if exito:
+                    estadisticas[clave]['tiempo'] = duracion
+                    estadisticas[clave]['errores'] = errores
+                    estadisticas[clave]['rango'] = calcular_rango(errores)
+                    estadisticas[clave]['modo'] = modo_elegido
+                    
+                    opcs = [" PASAR A OTRO NIVEL ", " FINALIZAR Y GENERAR COMPROBANTE "]
+                    res = 0
+                    while True:
+                        curses.curs_set(0)
+                        stdscr.clear()
+                        stdscr.addstr(alto//2-4, (ancho//2)-15, f"¡FASE {clave} COMPLETADA!", curses.color_pair(10) | curses.A_BOLD)
+                        stdscr.addstr(alto//2-2, (ancho//2)-15, f"Rango Obtenido: {estadisticas[clave]['rango']}", curses.color_pair(12))
+                        
+                        for i, o in enumerate(opcs):
+                            stdscr.addstr(alto//2+i, (ancho//2)-15, o, curses.A_REVERSE if i == res else curses.A_NORMAL)
+                        k = stdscr.getch()
+                        if k == curses.KEY_UP: res = 0
+                        elif k == curses.KEY_DOWN: res = 1
+                        elif k in [10, 13]: break
+                    
+                    if res == 1:
+                        generar_comprobante(stdscr, estadisticas)
+                        return
