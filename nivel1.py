@@ -5,8 +5,12 @@ import textwrap
 import random
 
 # --- MOTOR DE VOZ IA (EDGE-TTS - LOQUENDO) ---
-def hablar(texto, rate=280, esperar=False):
+def hablar(texto, rate=280, esperar=False, matar_previo=False):
     try:
+        # TUMBA EL AUDIO ANTERIOR SI SE SOLICITA (Adaptado para tu mpg123)
+        if matar_previo:
+            os.system("pkill -9 mpg123 >/dev/null 2>&1")
+
         texto_limpio = texto.replace('"', '').replace("'", "")
         
         # Traductor de velocidad: Convertimos la velocidad vieja al formato de Edge-TTS
@@ -15,7 +19,7 @@ def hablar(texto, rate=280, esperar=False):
         elif rate == 240:
             velocidad = "+25%"  # Rápido: Para confirmar "Correcto"
         elif rate >= 280:
-            velocidad = "+100%"  # Muy rápido: Para avisar del "Error"
+            velocidad = "+40%"  # Muy rápido: Para avisar del "Error"
         else:
             velocidad = "+15%"
 
@@ -29,9 +33,9 @@ def hablar(texto, rate=280, esperar=False):
     except:
         pass
 
-# --- TRADUCTOR FONÉTICO PARA MODO A CIEGAS ---
+# --- TRADUCTOR FONÉTICO (MEJORADO PARA VOCALES Y NÚMEROS) ---
 def deletrear(cmd):
-    """Traduce símbolos a palabras para que la IA los lea claramente."""
+    """Traduce símbolos a palabras y aclara letras/números para la IA."""
     res = []
     for char in cmd:
         if char == ' ': res.append('espacio')
@@ -49,7 +53,11 @@ def deletrear(cmd):
         elif char == '\\': res.append('barra invertida')
         elif char == "'": res.append('comilla simple')
         elif char == '"': res.append('comillas dobles')
-        elif char.isupper(): res.append(f'{char.lower()} mayúscula')
+        elif char.isalpha():
+            if char.isupper(): res.append(f'letra {char.lower()} mayúscula')
+            else: res.append(f'letra {char.lower()}')
+        elif char.isdigit():
+            res.append(f'número {char}')
         else: res.append(char)
     return " . ".join(res)
 
@@ -93,7 +101,7 @@ def alerta_bloq_mayus(stdscr):
     
     stdscr.addstr(alto//2 + 4, ancho//2 - 20, "[ PRESIONA CUALQUIER TECLA PARA CONTINUAR ]", curses.color_pair(10))
     stdscr.refresh()
-    hablar("Alerta. Bloqueo de mayúsculas detectado.", esperar=True)
+    hablar("Alerta. Bloqueo de mayúsculas detectado.", esperar=True, matar_previo=True)
     stdscr.getch()
 
 # --- BASE DE DATOS DE COMANDOS ---
@@ -322,6 +330,9 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                 
                 stdscr.addstr(2, ancho - 35, f"ERRORES: {errores_nivel} | TIEMPO: {format_time(tiempo_transcurrido)}", curses.color_pair(10))
                 
+                # Indicador de tecla F1 para repetir el audio sin dañar comandos
+                stdscr.addstr(alto - 2, ancho // 2 - 15, "[ F1 PARA REPETIR DELETREO ]", curses.color_pair(10) | curses.A_BOLD)
+                
                 pos_x = max(0, (ancho // 2) - (len(input_user) // 2))
                 stdscr.addstr(alto // 2, pos_x, input_user, curses.color_pair(3) | curses.A_BOLD)
                 
@@ -333,7 +344,8 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                         stdscr.clear()
                         stdscr.addstr(alto//2, ancho//2 - 12, "¡ TIEMPO AGOTADO !", curses.color_pair(11) | curses.A_BLINK | curses.A_BOLD)
                         stdscr.refresh()
-                        hablar("Tiempo agotado. Misión fracasada.", rate=200, esperar=True)
+                        # Si muere, matamos cualquier voz hablando para dictar sentencia
+                        hablar("Tiempo agotado. Misión fracasada.", rate=200, esperar=True, matar_previo=True)
                         time.sleep(1)
                         return False, 0, errores_nivel
                     color_reloj = curses.color_pair(11) | curses.A_BLINK if tiempo_restante <= 10 else curses.color_pair(10)
@@ -360,7 +372,7 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                 curses.curs_set(0)
                 
                 if "CIEGAS" in modo:
-                    stdscr.addstr(alto - 2, ancho // 2 - 12, "[ ESCUCHANDO A LA IA... ]", curses.color_pair(12) | curses.A_BLINK)
+                    stdscr.addstr(alto - 4, ancho // 2 - 12, "[ ESCUCHANDO A LA IA... ]", curses.color_pair(12) | curses.A_BLINK)
                 else:
                     stdscr.addstr(alto - 4, mx + 14, "[ ESCUCHANDO LA VOZ... ]", curses.color_pair(12) | curses.A_BLINK)
                 
@@ -368,19 +380,18 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                 t_inicio_voz = time.time()
                 
                 if "CIEGAS" in modo:
-                    # IA lee el comando, la explicación, y luego dicta letra por letra
                     texto_unido = f"Comando: {m['cmd']}. Explicación: {m['desc']}. Deletreo: {deletrear(m['cmd'])}."
                 else:
                     texto_unido = f"Comando: {m['cmd']}. Explicación: {m['desc']}."
                     
-                hablar(texto_unido, rate=200, esperar=True)
+                hablar(texto_unido, rate=200, esperar=True, matar_previo=True)
                 
                 tiempo_hablando += (time.time() - t_inicio_voz)
                 curses.flushinp() 
                 voz_lista = True
                 
                 if "CIEGAS" in modo:
-                    stdscr.move(alto - 2, 0)
+                    stdscr.move(alto - 4, 0)
                     stdscr.clrtoeol()
                 else:
                     stdscr.move(alto-4, mx)
@@ -403,11 +414,14 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                     exito = True
                     curses.curs_set(0)
                     t_inicio_voz = time.time()
-                    hablar("Correcto", rate=240, esperar=True) 
+                    hablar("Correcto", rate=240, esperar=True, matar_previo=True) 
                     tiempo_hablando += (time.time() - t_inicio_voz)
                 else: input_user = ""
             elif k in [127, 8, curses.KEY_BACKSPACE]:
                 input_user = input_user[:-1]
+            elif k == curses.KEY_F1: # El botón táctico para repetir
+                if "CIEGAS" in modo:
+                    hablar(f"Repito deletreo: {deletrear(m['cmd'])}.", rate=200, esperar=False, matar_previo=True)
             elif 32 <= k <= 126:
                 char = chr(k)
                 pos_actual = len(input_user)
@@ -421,11 +435,11 @@ def ejecutar_nivel(stdscr, comandos, nombre_nivel, modo="CLASICO", tiempo_limite
                     input_user = "" 
                     errores_nivel += 1
                     
-                    # Refuerzo a ciegas: Si te equivocas, vuelve a deletrear para que no te pierdas
+                    # Refuerzo automático: si falla, mata el audio y le grita el error con el deletreo
                     if "CIEGAS" in modo:
-                        hablar(f"Error. Repito: {deletrear(m['cmd'])}", rate=240, esperar=False)
+                        hablar(f"Error. Repito: {deletrear(m['cmd'])}", rate=240, esperar=False, matar_previo=True)
                     else:
-                        hablar("Error", rate=280, esperar=False) 
+                        hablar("Error", rate=280, esperar=False, matar_previo=True) 
                         
             elif k == 27: 
                 curses.curs_set(0)
