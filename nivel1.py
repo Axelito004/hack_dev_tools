@@ -7,24 +7,25 @@ import random
 # --- MOTOR DE VOZ IA (EDGE-TTS - LOQUENDO) ---
 def hablar(texto, rate=280, esperar=False, matar_previo=False):
     try:
-        # TUMBA EL AUDIO ANTERIOR SI SE SOLICITA (Adaptado para tu mpg123)
+        # TUMBA AL REPRODUCTOR Y A LA IA (Evita el Broken Pipe)
         if matar_previo:
             os.system("pkill -9 mpg123 >/dev/null 2>&1")
+            os.system("pkill -f edge-tts >/dev/null 2>&1")
 
         texto_limpio = texto.replace('"', '').replace("'", "")
         
         # Traductor de velocidad: Convertimos la velocidad vieja al formato de Edge-TTS
         if rate == 200:
-            velocidad = "+15%"  # Base: Un poquito más rápido de lo normal
+            velocidad = "+15%"  
         elif rate == 240:
-            velocidad = "+25%"  # Rápido: Para confirmar "Correcto"
+            velocidad = "+25%"  
         elif rate >= 280:
-            velocidad = "+40%"  # Muy rápido: Para avisar del "Error"
+            velocidad = "+120%"  
         else:
             velocidad = "+15%"
 
-        # Inyectamos el parámetro --rate con la velocidad calculada
-        comando_bash = f'edge-tts --voice es-MX-JorgeNeural --rate="{velocidad}" --text "{texto_limpio}" | mpg123 -q - 2>/dev/null'
+        # Envolvemos todo el comando en () y redirigimos el stderr al abismo
+        comando_bash = f'(edge-tts --voice es-MX-JorgeNeural --rate="{velocidad}" --text "{texto_limpio}" | mpg123 -q -) 2>/dev/null'
         
         if not esperar:
             comando_bash += ' &' 
