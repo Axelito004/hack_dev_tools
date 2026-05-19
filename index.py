@@ -100,11 +100,10 @@ def draw_shell(stdscr):
     authors = "Desarrollado por:(AXL-HACKING) A.G Castillo Giménez && Ing. Josue Ordoñez"
     
     opciones = [
-        " 1. Fundamentos de Bash y Supervivencia ",
-        " 2. Programa un Rubber-Ducky",
-        " 3. Imagen Infectada (Virus)",
-        " 4. Análisis Forense de Memoria RAM ",
-        " 5. Forense de Redes y Tráfico ",
+        " 1. Fundamentos de Terminal y comandos básicas(Práctica)",
+        " 2. Entrenamiento en BASH (SANDBOX)",
+        " 3. Análisis Forense de Archivos.",
+        " 4. Análisis Forense de Redes y Tráfico ",
         " [ SALIR DEL SISTEMA ] "
     ]
 
@@ -191,7 +190,7 @@ def draw_shell(stdscr):
         elif tecla == curses.KEY_DOWN and fila_seleccionada < len(opciones) - 1:
             fila_seleccionada += 1
         elif tecla in [10, 13, curses.KEY_ENTER]:
-            if fila_seleccionada == 5: break
+            if fila_seleccionada == 4: break
             
             # DESACTIVAR TIMEOUT ANTES DE ENTRAR AL MÓDULO PARA NO ROMPER SU TECLADO
             stdscr.timeout(-1)
@@ -200,14 +199,12 @@ def draw_shell(stdscr):
                 stdscr.clear()
                 nivel1.iniciar(stdscr)
                 curses.curs_set(0)
+                """
             elif fila_seleccionada == 1:
                 stdscr.clear()
                 nivel2.iniciar(stdscr)
                 curses.curs_set(0)
-            elif fila_seleccionada == 2:
-                stdscr.clear()
-                nivel3.iniciar(stdscr)
-                curses.curs_set(0)
+                """
             else:
                 stdscr.clear()
                 msg = f">> MODULO {fila_seleccionada + 1} EN DESARROLLO <<"
