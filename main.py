@@ -199,12 +199,12 @@ def draw_shell(stdscr):
                 stdscr.clear()
                 nivel1.iniciar(stdscr)
                 curses.curs_set(0)
-                """
+                
             elif fila_seleccionada == 1:
                 stdscr.clear()
                 nivel2.iniciar(stdscr)
                 curses.curs_set(0)
-                """
+                
             else:
                 stdscr.clear()
                 msg = f">> MODULO {fila_seleccionada + 1} EN DESARROLLO <<"
