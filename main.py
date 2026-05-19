@@ -100,7 +100,7 @@ def draw_shell(stdscr):
     authors = "Desarrollado por:(AXL-HACKING) A.G Castillo Giménez && Ing. Josue Ordoñez"
     
     opciones = [
-        " 1. Fundamentos de Terminal y comandos básicas(Práctica)",
+        " 1. Fundamentos de Terminal y comandos básicos(Práctica)",
         " 2. Entrenamiento en BASH (SANDBOX)",
         " 3. Análisis Forense de Archivos.",
         " 4. Análisis Forense de Redes y Tráfico ",
