@@ -94,7 +94,7 @@ def draw_shell(stdscr):
     }
 
     palabra = "FUNDACITE"
-    header_inst = "--- FUNDACITE YARACUY && MINCYT YARACUY ---"
+    header_inst = "--- FUNDACITE YARACUY && MINCYT---"
     subtitle = "Pasos basicos en Terminal & Herremientas Forenses"
     # ACTUALIZACIÓN DE IDENTIDAD SEGÚN TU PREFERENCIA PROFESIONAL
     authors = "Desarrollado por:(AXL-HACKING) A.G Castillo Giménez && Ing. Josue Ordoñez"
