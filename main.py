@@ -198,13 +198,15 @@ def draw_shell(stdscr):
             if fila_seleccionada == 0:
                 stdscr.clear()
                 nivel1.iniciar(stdscr)
-                curses.curs_set(0)
-                
+                curses.curs_set(0)     
             elif fila_seleccionada == 1:
                 stdscr.clear()
                 nivel2.iniciar(stdscr)
                 curses.curs_set(0)
-                
+            elif fila_seleccionada == 2:
+                stdscr.clear()
+                nivel3.iniciar(stdscr)
+                curses.curs_set(0)
             else:
                 stdscr.clear()
                 msg = f">> MODULO {fila_seleccionada + 1} EN DESARROLLO <<"
