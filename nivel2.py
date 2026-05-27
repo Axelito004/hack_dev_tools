@@ -345,7 +345,7 @@ def ejecutar_sandbox_real(stdscr, comandos=misiones_sandbox):
     finally:
         # Destruye el Sandbox pase lo que pase
         if os.path.exists(ruta_sandbox):
-            shutil.rmtree(ruta_sandbox)
+            shutil.rmtree(ruta_sandbox) 
 
 # Wrapper para correrlo directamente y probarlo
 def iniciar(stdscr):
