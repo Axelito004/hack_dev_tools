@@ -6,6 +6,7 @@ import random
 import nivel1
 import nivel2 
 import nivel3 
+import nivel4 
 import os
 
 # Configurar soporte para caracteres especiales (UTF-8)
@@ -206,6 +207,10 @@ def draw_shell(stdscr):
             elif fila_seleccionada == 2:
                 stdscr.clear()
                 nivel3.iniciar(stdscr)
+                curses.curs_set(0)
+            elif fila_seleccionada == 3:
+                stdscr.clear()
+                nivel4.iniciar(stdscr)
                 curses.curs_set(0)
             else:
                 stdscr.clear()
