@@ -70,7 +70,7 @@ git clone https://github.com/Axelito004/hack_dev_tools.git
 cd hack_dev_tools
 
 # 2. Para ejecutar programa
-sudo python3 main.py
+python3 main.py
 
 ```
 ## ⚠️ Advertencia Legal, Términos de Uso y Exención de Responsabilidad
