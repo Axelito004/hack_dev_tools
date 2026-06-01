@@ -58,16 +58,18 @@ pipx ensurepath
 pipx install gtts
 pipx install edge-tts
 ```
+## ⬇️ Para descargar el programam en tu carpeta /home
+```bash
+git clone https://github.com/Axelito004/hack_dev_tools.git
+```
+
 ## 👾 PARA EJECUTAR 
 
 ```bash
-# 1. Descargar proyecto
-git clone [https://github.com/Axelito004/hack_dev_tools.git](https://github.com/Axelito004/hack_dev_tools.git)
-
-# 2. Entrar al directorio del proyecto
+# 1. Entrar al directorio del proyecto
 cd hack_dev_tools
 
-# 3. Para ejecutar programa
+# 2. Para ejecutar programa
 sudo python3 main.py
 
 ```
